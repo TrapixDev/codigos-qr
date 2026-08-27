@@ -251,13 +251,14 @@ select.field-input {
   font-weight: 600;
 }
 
-.ecc-warning {
-  color: #b7791f;
+.ecc-note {
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
-html[data-theme="dark"] .ecc-warning {
-  color: #e0a94e;
+.ecc-option input:disabled + span {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .field-check {

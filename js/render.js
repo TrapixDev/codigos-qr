@@ -34,7 +34,7 @@ const QR_RENDER = (() => {
   function renderToCanvas(canvas, payload, { width = 720, ecc = 'M' } = {}) {
     return QRCode.toCanvas(canvas, payload, {
       width,
-      margin: 2,
+      margin: 4,
       errorCorrectionLevel: normalizeEcc(ecc),
       color: { dark: DARK, light: LIGHT },
     });
@@ -45,7 +45,7 @@ const QR_RENDER = (() => {
       QRCode.toString(payload, {
         type: 'svg',
         width,
-        margin: 2,
+        margin: 4,
         errorCorrectionLevel: normalizeEcc(ecc),
         color: { dark: DARK, light: LIGHT },
       })

@@ -126,17 +126,24 @@
   }
 
   function effectiveEcc() {
-    return state.ecc;
+    return state.logo ? 'H' : state.ecc;
   }
 
-  function updateEccWarning() {
-    const warning = $('#ecc-warning');
-    if (state.logo && state.ecc !== 'H') {
-      warning.textContent =
-        `El logo cubre módulos del código: con ECC ${state.ecc} el QR podría no ser legible. Recomendado: H (30%).`;
-      warning.hidden = false;
+  function applyEccRadios() {
+    $$('input[name="ecc"]').forEach((radio) => {
+      radio.disabled = state.logo;
+      radio.checked = radio.value === (state.logo ? 'H' : state.ecc);
+    });
+  }
+
+  function updateEccNote() {
+    const note = $('#ecc-note');
+    if (state.logo) {
+      note.textContent =
+        'Modo seguro: ECC H (30%) activado automáticamente por el logo.';
+      note.hidden = false;
     } else {
-      warning.hidden = true;
+      note.hidden = true;
     }
   }
 
@@ -188,7 +195,7 @@
   async function render() {
     const id = ++renderId;
     const ecc = effectiveEcc();
-    updateEccWarning();
+    updateEccNote();
     const result = QR_FORMAT.buildPayload(state.type, collectValues());
 
     if (result.error) {
@@ -333,8 +340,7 @@
 
   $$('input[name="ecc"]').forEach((radio) => {
     radio.addEventListener('change', () => {
-      if (radio.checked) state.ecc = radio.value;
-      updateEccWarning();
+      if (radio.checked && !radio.disabled) state.ecc = radio.value;
       scheduleRender();
     });
   });
@@ -351,9 +357,13 @@
     if (state.logo && !logoImage) {
       initDefaultLogo();
     }
-    updateEccWarning();
+    applyEccRadios();
+    updateEccNote();
     scheduleRender();
   });
+
+  applyEccRadios();
+  updateEccNote();
 
   logoFileInput.addEventListener('change', async () => {
     const file = logoFileInput.files[0];
