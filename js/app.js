@@ -23,6 +23,7 @@
   let lastPayload = '';
   let logoImage = null;
   let logoDataUrl = '';
+  let logoAspect = 1;
   let userLogoUploaded = false;
 
   const BASE_NOTE =
@@ -91,13 +92,10 @@
     }
     const bw = maxX - minX + 1;
     const bh = maxY - minY + 1;
-    const side = Math.max(bw, bh);
     const out = document.createElement('canvas');
-    out.width = side;
-    out.height = side;
-    out.getContext('2d').drawImage(
-      c, minX, minY, bw, bh, (side - bw) / 2, (side - bh) / 2, bw, bh
-    );
+    out.width = bw;
+    out.height = bh;
+    out.getContext('2d').drawImage(c, minX, minY, bw, bh, 0, 0, bw, bh);
     const dataUrl = out.toDataURL('image/png');
     const trimmed = new Image();
     await new Promise((resolve, reject) => {
@@ -115,6 +113,8 @@
       const trimmed = await trimTransparent(image);
       logoImage = trimmed.image;
       logoDataUrl = trimmed.dataUrl;
+      logoAspect =
+        trimmed.image.naturalHeight / trimmed.image.naturalWidth || 1;
       scheduleRender();
     };
     image.onerror = () => {
@@ -126,7 +126,18 @@
   }
 
   function effectiveEcc() {
-    return state.logo ? 'H' : state.ecc;
+    return state.ecc;
+  }
+
+  function updateEccWarning() {
+    const warning = $('#ecc-warning');
+    if (state.logo && state.ecc !== 'H') {
+      warning.textContent =
+        `El logo cubre módulos del código: con ECC ${state.ecc} el QR podría no ser legible. Recomendado: H (30%).`;
+      warning.hidden = false;
+    } else {
+      warning.hidden = true;
+    }
   }
 
   function collectValues() {
@@ -177,6 +188,7 @@
   async function render() {
     const id = ++renderId;
     const ecc = effectiveEcc();
+    updateEccWarning();
     const result = QR_FORMAT.buildPayload(state.type, collectValues());
 
     if (result.error) {
@@ -271,7 +283,7 @@
         ecc: effectiveEcc(),
       });
       if (state.logo && logoDataUrl) {
-        svg = QR_RENDER.addLogoToSvg(svg, logoDataUrl);
+        svg = QR_RENDER.addLogoToSvg(svg, logoDataUrl, logoAspect);
       }
       downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), fileBase() + '.svg');
     } catch (err) {
@@ -322,6 +334,7 @@
   $$('input[name="ecc"]').forEach((radio) => {
     radio.addEventListener('change', () => {
       if (radio.checked) state.ecc = radio.value;
+      updateEccWarning();
       scheduleRender();
     });
   });
@@ -338,6 +351,7 @@
     if (state.logo && !logoImage) {
       initDefaultLogo();
     }
+    updateEccWarning();
     scheduleRender();
   });
 
@@ -374,6 +388,8 @@
       userLogoUploaded = true;
       logoImage = trimmed.image;
       logoDataUrl = trimmed.dataUrl;
+      logoAspect =
+        trimmed.image.naturalHeight / trimmed.image.naturalWidth || 1;
       logoFileHint.textContent = `Logo cargado: ${file.name}`;
       scheduleRender();    } catch {
       logoFileHint.textContent = 'No se pudo leer la imagen. Intenta con otra.';

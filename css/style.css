@@ -251,6 +251,15 @@ select.field-input {
   font-weight: 600;
 }
 
+.ecc-warning {
+  color: #b7791f;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .ecc-warning {
+  color: #e0a94e;
+}
+
 .field-check {
   display: flex;
   align-items: center;
