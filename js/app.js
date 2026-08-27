@@ -61,16 +61,60 @@
   initTheme();
   initDefaultLogo();
 
+  async function trimTransparent(image) {
+    const c = document.createElement('canvas');
+    c.width = image.naturalWidth;
+    c.height = image.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+    const data = ctx.getImageData(0, 0, c.width, c.height).data;
+    const w = c.width;
+    const h = c.height;
+    let minX = w;
+    let maxX = 0;
+    let minY = h;
+    let maxY = 0;
+    let found = false;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] > 10) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          found = true;
+        }
+      }
+    }
+    if (!found || (minX === 0 && minY === 0 && maxX === w - 1 && maxY === h - 1)) {
+      return { image, dataUrl: c.toDataURL('image/png') };
+    }
+    const bw = maxX - minX + 1;
+    const bh = maxY - minY + 1;
+    const side = Math.max(bw, bh);
+    const out = document.createElement('canvas');
+    out.width = side;
+    out.height = side;
+    out.getContext('2d').drawImage(
+      c, minX, minY, bw, bh, (side - bw) / 2, (side - bh) / 2, bw, bh
+    );
+    const dataUrl = out.toDataURL('image/png');
+    const trimmed = new Image();
+    await new Promise((resolve, reject) => {
+      trimmed.onload = resolve;
+      trimmed.onerror = reject;
+      trimmed.src = dataUrl;
+    });
+    return { image: trimmed, dataUrl };
+  }
+
   function initDefaultLogo() {
     const image = new Image();
-    image.onload = () => {
+    image.onload = async () => {
       if (userLogoUploaded) return;
-      logoImage = image;
-      const c = document.createElement('canvas');
-      c.width = image.naturalWidth;
-      c.height = image.naturalHeight;
-      c.getContext('2d').drawImage(image, 0, 0);
-      logoDataUrl = c.toDataURL('image/png');
+      const trimmed = await trimTransparent(image);
+      logoImage = trimmed.image;
+      logoDataUrl = trimmed.dataUrl;
       scheduleRender();
     };
     image.onerror = () => {
@@ -326,12 +370,12 @@
         image.onerror = reject;
         image.src = dataUrl;
       });
+      const trimmed = await trimTransparent(image);
       userLogoUploaded = true;
-      logoImage = image;
-      logoDataUrl = dataUrl;
+      logoImage = trimmed.image;
+      logoDataUrl = trimmed.dataUrl;
       logoFileHint.textContent = `Logo cargado: ${file.name}`;
-      scheduleRender();
-    } catch {
+      scheduleRender();    } catch {
       logoFileHint.textContent = 'No se pudo leer la imagen. Intenta con otra.';
       logoFileHint.classList.add('error');
       logoFileInput.value = '';
