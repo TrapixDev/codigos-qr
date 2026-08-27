@@ -2,8 +2,8 @@ const QR_RENDER = (() => {
   const LEVELS = ['L', 'M', 'Q', 'H'];
   const DARK = '#1c2333';
   const LIGHT = '#ffffff';
-  const LOGO_RATIO = 0.2;
-  const LOGO_BG_RATIO = 0.24;
+  const LOGO_RATIO = 0.13;
+  const LOGO_BG_RATIO = 0.16;
   const LOGO_RADIUS = 0.15;
 
   function normalizeEcc(level) {
