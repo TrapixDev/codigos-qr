@@ -1,5 +1,5 @@
 (() => {
-  const state = { type: 'url', ecc: 'M', size: 720, logo: false };
+  const state = { type: 'url', ecc: 'M', size: 720, logo: true };
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -23,6 +23,7 @@
   let lastPayload = '';
   let logoImage = null;
   let logoDataUrl = '';
+  let userLogoUploaded = false;
 
   const BASE_NOTE =
     'Nivel ECC: M · PNG para pantalla · SVG vectorial para imprenta.';
@@ -58,6 +59,27 @@
   });
 
   initTheme();
+  initDefaultLogo();
+
+  function initDefaultLogo() {
+    const image = new Image();
+    image.onload = () => {
+      if (userLogoUploaded) return;
+      logoImage = image;
+      const c = document.createElement('canvas');
+      c.width = image.naturalWidth;
+      c.height = image.naturalHeight;
+      c.getContext('2d').drawImage(image, 0, 0);
+      logoDataUrl = c.toDataURL('image/png');
+      scheduleRender();
+    };
+    image.onerror = () => {
+      logoFileHint.textContent =
+        'No se pudo cargar el logo del colegio. Sube uno manualmente.';
+      logoFileHint.classList.add('error');
+    };
+    image.src = 'assets/logo-colegio.png';
+  }
 
   function effectiveEcc() {
     return state.logo ? 'H' : state.ecc;
@@ -269,13 +291,8 @@
   logoInput.addEventListener('change', () => {
     state.logo = logoInput.checked;
     logoFileWrap.hidden = !state.logo;
-    if (!state.logo) {
-      logoFileInput.value = '';
-      logoImage = null;
-      logoDataUrl = '';
-      logoFileHint.textContent =
-        'PNG, JPG o SVG · máx 2 MB · se centra al 20% del QR.';
-      logoFileHint.classList.remove('error');
+    if (state.logo && !logoImage) {
+      initDefaultLogo();
     }
     scheduleRender();
   });
@@ -283,25 +300,16 @@
   logoFileInput.addEventListener('change', async () => {
     const file = logoFileInput.files[0];
     logoFileHint.classList.remove('error');
-    if (!file) {
-      logoImage = null;
-      logoDataUrl = '';
-      scheduleRender();
-      return;
-    }
+    if (!file) return;
     if (!/^image\/(png|jpe?g|svg\+xml)$/.test(file.type)) {
       logoFileHint.textContent = 'Formato no válido. Usa PNG, JPG o SVG.';
       logoFileHint.classList.add('error');
-      logoImage = null;
-      logoDataUrl = '';
       logoFileInput.value = '';
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
       logoFileHint.textContent = 'La imagen supera los 2 MB. Elige una más ligera.';
       logoFileHint.classList.add('error');
-      logoImage = null;
-      logoDataUrl = '';
       logoFileInput.value = '';
       return;
     }
@@ -318,6 +326,7 @@
         image.onerror = reject;
         image.src = dataUrl;
       });
+      userLogoUploaded = true;
       logoImage = image;
       logoDataUrl = dataUrl;
       logoFileHint.textContent = `Logo cargado: ${file.name}`;
@@ -325,8 +334,6 @@
     } catch {
       logoFileHint.textContent = 'No se pudo leer la imagen. Intenta con otra.';
       logoFileHint.classList.add('error');
-      logoImage = null;
-      logoDataUrl = '';
       logoFileInput.value = '';
     }
   });
