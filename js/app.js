@@ -119,7 +119,7 @@
     };
     image.onerror = () => {
       logoFileHint.textContent =
-        'No se pudo cargar el logo del colegio. Sube uno manualmente.';
+        'No se pudo cargar el logo de La Loma. Sube uno manualmente.';
       logoFileHint.classList.add('error');
     };
     image.src = 'assets/logo-colegio.png';
